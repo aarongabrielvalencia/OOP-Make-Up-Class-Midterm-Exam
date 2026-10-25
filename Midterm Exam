@@ -1,0 +1,89 @@
+from abc import ABC, abstractmethod
+
+class Order(ABC):
+    def __init__(self, customer_name, subtotal):
+        self.customer_name = customer_name
+        self.subtotal = subtotal
+        self.voucher_discount = 0
+        
+    def introduce(self):
+        print(f"Your order is now Processing  {self.customer_name} | Items Subtotal: ₱{self.subtotal:.2f}")
+        
+    def apply_voucher(self, code, discount_amount):
+        self.voucher_discount = discount_amount
+        print(f"🎫 Voucher '{code}' applied! Saved: -₱{discount_amount:.2f}")
+        
+    def calculate_total(self):
+        pass
+    
+    def display_breakdown(self):
+        pass
+
+class OutOfStoreOrder(Order):
+    def __init__(self, customer_name, subtotal, distance_km):
+        super().__init__(customer_name, subtotal)
+        self.distance_km = distance_km
+        
+    def calculate_total(self):
+        # Base implementation for orders leaving the store
+        return self.subtotal - self.voucher_discount
+
+class DeliveryOrder(OutOfStoreOrder):
+    def __init__(self, customer_name, subtotal, distance_km):
+        super().__init__(customer_name, subtotal, distance_km)
+        self.delivery_fee = distance_km * 12 + 24 # ₱49 base + ₱10 per km
+        self.service_fee = 32
+        
+    def calculate_total(self):
+        discounted_subtotal = self.subtotal - self.voucher_discount
+        return max(0, discounted_subtotal) + self.delivery_fee + self.service_fee
+        
+    def display_breakdown(self):
+        total = self.calculate_total()
+        print(f" Delivery Breakdown -> Fee: ₱{self.delivery_fee:.2f} | Service Fee: ₱{self.service_fee:.2f} | Grand Total: ₱{total:.2f}")
+
+class PickUpOrder(OutOfStoreOrder):
+    def __init__(self, customer_name, subtotal, distance_km):
+        super().__init__(customer_name, subtotal, distance_km)
+        
+    def calculate_total(self):
+        discounted_subtotal = self.subtotal - self.voucher_discount
+        return max(0, discounted_subtotal)
+        
+    def display_breakdown(self):
+        total = self.calculate_total()
+        print(f"️ Pick-Up Breakdown -> No extra fees! | Grand Total: ₱{total:.2f}")
+
+class DineInOrder(Order):
+    def __init__(self, customer_name, subtotal, table_number):
+        super().__init__(customer_name, subtotal)
+        self.table_number = table_number
+        self.service_charge_percent = 10 # 10% Restaurant dine-in fee
+        
+    def calculate_total(self):
+        discounted_subtotal = max(0, self.subtotal - self.voucher_discount)
+        service_charge = discounted_subtotal * (self.service_charge_percent / 100)
+        return discounted_subtotal + service_charge
+        
+    def display_breakdown(self):
+        discounted_subtotal = max(0, self.subtotal - self.voucher_discount)
+        service_charge = discounted_subtotal * (self.service_charge_percent / 100)
+        total = self.calculate_total()
+        print(f"️ Dine-In Breakdown -> Table: {self.table_number} | Service Charge: ₱{service_charge:.2f} | Grand Total: ₱{total:.2f}")
+
+
+DeliveryOrder = DeliveryOrder("Dan", 450, 4.5)
+
+PickUpOrder = PickUpOrder("Pat", 280, 1.2)
+
+DineInOrder = DineInOrder("Mark", 600, 12)
+
+
+DeliveryOrder.apply_voucher("FP50", 50)
+DineInOrder.apply_voucher("10PERCENT", 60)
+
+party = [DeliveryOrder, PickUpOrder, DineInOrder]
+for order in party:
+    order.introduce()
+    order.display_breakdown()
+    print("-" * 50)
